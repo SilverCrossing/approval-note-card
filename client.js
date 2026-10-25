@@ -32,23 +32,13 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
 
-    /**
-     * The primitives module carries the host's button styling. It is optional:
-     * if the browser module table ever stops exposing it, the card degrades to
-     * a styled native button instead of failing to render.
-     *
-     * 中文：按钮样式优先用宿主提供的 primitives；拿不到就退回自绘的原生
-     * 按钮，保证卡片永远能渲染出来，不会因为模块表变化整块白屏。
-     */
-    let Button = null
-    try {
-      const primitives = require('@deepseek-ai/dsh-client-ui-primitives')
-      if (primitives !== null && primitives !== undefined && typeof primitives.Button === 'function') {
-        Button = primitives.Button
-      }
-    } catch {
-      Button = null
-    }
+    // Buttons are native elements styled here, deliberately: the card must not
+    // depend on the primitives module being present in the browser module table.
+    //
+    // 中文：按钮一律用原生元素 + 内联样式，不依赖宿主的 primitives 模块。
+    // 原因有两条：一是 primitives 未必在模块表里（拿不到就静默降级，行为不可预期）；
+    // 二是它的 primary 变体依赖主题 token，一旦 token 解析成白底、文字又是白色，
+    // 按钮就会“变纯白”（实测已经踩到）。这里直接写死一对对比安全的配色。
 
     const NS = 'approval-note-card'
     const MAX_NOTE = 2000
@@ -131,14 +121,28 @@ window.__ModuleLoader__.load({
     const errorStyle = { fontSize: '12px', lineHeight: '18px', color: 'var(--dsw-alias-state-error-primary, #f87171)' }
     const actionRowStyle = { display: 'flex', justifyContent: 'flex-end', gap: '8px', padding: '14px 16px', flexWrap: 'wrap' }
 
-    // 原生按钮的兜底样式：primary 用品牌色实底，其余为描边；禁用时半透明。
+    // 原生按钮样式：三档视觉权重。
+    //   outline —— 拒绝，中性描边
+    //   accent  —— 拒绝并说明，警告色描边 + 文字
+    //   primary —— 允许一次，实心蓝底白字（写死颜色，不读主题 token）
+    // 禁用时统一半透明。
     function nativeButtonStyle(emphasis, disabled) {
       const primary = emphasis === 'primary'
+      const accent = emphasis === 'accent'
+      const border = accent
+        ? '1px solid var(--dsw-alias-state-warn-secondary, #b45309)'
+        : '1px solid var(--dsw-alias-border-secondary, #3f3f46)'
       return {
         appearance: 'none',
-        border: primary ? '1px solid transparent' : '1px solid var(--dsw-alias-border-secondary, #3f3f46)',
-        background: primary ? 'var(--dsw-alias-brand-primary, #4d6bfe)' : 'transparent',
-        color: primary ? '#ffffff' : 'var(--dsw-alias-label-primary, #f5f5f5)',
+        border: primary ? '1px solid transparent' : border,
+        // #2563eb / #ffffff 是一对固定配色：无论主题把 brand 定义成什么，
+        // 文字都不会和背景撞色。
+        background: primary ? '#2563eb' : 'transparent',
+        color: primary
+          ? '#ffffff'
+          : accent
+            ? 'var(--dsw-alias-state-warn-primary, #f59e0b)'
+            : 'var(--dsw-alias-label-primary, #f5f5f5)',
         borderRadius: '8px',
         padding: '6px 12px',
         font: 'inherit',
@@ -150,19 +154,12 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One card action; `accent` is a native-button emphasis with no primitive peer.
+     * One card action; `accent` is the warn-colored "reject with note" variant.
      *
-     * 中文：渲染一个按钮。有 primitives 时用 Button（outline / primary）；
-     * “拒绝并说明”（accent）没有对应的 primitive 变体，固定用原生按钮。
+     * 中文：渲染一个按钮。不再区分 primitives / 原生两套，避免“拿不到 primitives
+     * 时静默换一套外观”这种不可预期行为。
      */
     function action(label, emphasis, disabled, onClick) {
-      if (Button !== null && emphasis !== 'accent') {
-        return h(Button, {
-          variant: emphasis === 'primary' ? 'primary' : 'outline',
-          disabled,
-          onClick,
-        }, label)
-      }
       return h('button', {
         type: 'button',
         disabled,
