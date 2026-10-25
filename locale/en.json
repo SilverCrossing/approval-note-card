@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Approval Note Card",
+    "description": "Adds a note field to the approval card: the reason is delivered to the model as a user message before the call is rejected, so it learns why instead of retrying elsewhere."
+  }
+}

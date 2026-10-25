@@ -1,0 +1,45 @@
+{
+  "name": "approval-note-card",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "SilverCrossing",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SilverCrossing/approval-note-card.git"
+  },
+  "type": "module",
+  "description": "Approval card that also accepts a short note and delivers it to the model as a user message before rejecting the call.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.0"
+  }
+}

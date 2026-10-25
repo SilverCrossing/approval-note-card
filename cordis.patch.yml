@@ -1,0 +1,13 @@
+# Bundle layer: the approval-note-card row.
+#
+# The row is a no-op Host plugin: the capability lives entirely in the Client
+# module, which registers a higher-precedence entry on `conversation.composer`.
+# The stock approval panel stays installed, so removing or disabling this row
+# returns the page to the stock card instead of leaving approvals unanswered.
+#
+# 中文：这一行在宿主侧是空实现，功能全在客户端模块里——它会在
+# conversation.composer 链上注册一个优先级更高的条目。官方审批卡不会被卸载，
+# 所以禁用或卸载本插件时页面会自动退回原生卡片，不会出现“有请求没人应答”。
+- insert:
+    - id: approval-note-card
+      name: approval-note-card
