@@ -19,6 +19,25 @@
 - **允许一次**：和原生一致。
 - 输入框里 Enter 发送说明，Shift+Enter 换行，中文输入法composing 期间不触发。
 
+## 组合使用（四件套）
+
+本插件是为下面这套护栏设计的。四个可以单独装，也可以一起装：
+
+| 插件 | 仓库 | 职责 |
+|---|---|---|
+| `write-approval-guard` | <https://github.com/SilverCrossing/write-approval-guard> | 写操作审批；高危操作二次确认；敏感文件读取审批；判定日志 |
+| `outside-access-guard` | <https://github.com/SilverCrossing/outside-access-guard> | 工作区外读/写的审批；敏感位置二次确认；判定日志 |
+| `dsh-safety-toolkit` | <https://github.com/SilverCrossing/dsh-safety-toolkit> | `safe_*` 工具：改前快照、语法门禁、失败自动还原、可回滚 |
+| `approval-note-card` | 本仓库 | 审批卡加输入框；拒绝时把说明作为用户消息送给模型 |
+
+联动关系：
+
+- 前两个负责**判定**（要不要问、问几次），本插件只负责**问答界面**，不参与任何判定；
+- 三者都通过宿主侧的 `approval/request` 瀑布发起审批，本插件在浏览器侧接管渲染，回答仍走同一条瀑布——所以守卫的拦截行为和审计日志完全不受影响；
+- `dsh-safety-toolkit` 的写操作同样经过 `write-approval-guard`，因此也会显示这张卡片。
+
+兼容性上唯一的约束见下一节：说明依赖 `steer`，和 `onReject: turn`（拒绝即取消本轮）互斥。
+
 ## 安装
 
 ```powershell
@@ -41,6 +60,12 @@ dsh plugin --profile desktop add github:SilverCrossing/approval-note-card#<commi
 - `/plugins` 里禁用或卸载本插件 → 官方 `ui-approval` 仍在，退回原生卡片。
 - 待审批对象的形状变了（`kind` / `answer` / `answerable` 不满足）→ `select` 返回 `null`，同样退回原生卡。
 - 说明发送失败 → 卡片保持打开、显示错误，不会出现"拒了但没说明"。
+
+## 日志
+
+本插件**不落盘日志**——纯客户端，碰不到文件系统。四件套里的另外三个（`write-approval-guard`、`outside-access-guard`、`dsh-safety-toolkit`）已经覆盖了绝大多数信息：谁触发的审批、判定结果、`callId` 都在它们各自的日志里。
+
+本插件只留两处间接痕迹：说明原文作为一条用户消息进入会话记录（`[拒绝说明] …`）；守卫日志里有对应的 `outcome: "rejected"` 和 `callId`，但**不含说明文本**。两者按时间对齐，不能按 `callId` join。后续如果确实需要精确归因，再补宿主侧日志。
 
 ## 已知限制
 
